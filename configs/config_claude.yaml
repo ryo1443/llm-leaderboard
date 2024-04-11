@@ -1,21 +1,21 @@
 wandb:
   log: True
-  entity: "your/WANDB/entity"
-  project: "your/WANDB/project"
-  run_name: "your/WANDB/run_name" 
+  entity: "wandb-japan"
+  project: "llm-leaderboard"
+  run_name: "claude-3-opus-20240229 [Commercial]"
 
-github_version: v2.0.0 #for recording
+github_version: "2.0.0"
 
 testmode: false
 
 # if you don't use api, please set "api" as "false"
-# if you use api, please select from "openai", "anthoropic", "google", "cohere", "mistral", "amazon_bedrock"
-api: false
+# if you use api, please select from "openai", "anthoropic", "google", "cohere"
+api: "anthoropic"
 
 model:
   use_wandb_artifacts: false
   artifacts_path: ""
-  pretrained_model_name_or_path: 'name of your model' #if you use openai api, put the name of model
+  pretrained_model_name_or_path: "claude-3-opus-20240229" #if you use openai api, put the name of model
   trust_remote_code: true
   device_map: "auto"
   load_in_8bit: false
@@ -30,14 +30,14 @@ generator:
 tokenizer:
   use_wandb_artifacts: false
   artifacts_path: ""
-  pretrained_model_name_or_path: null
+  pretrained_model_name_or_path: "claude-3-opus-20240229"
   use_fast: true
 
 # for llm-jp-eval
 max_seq_length: 2048
-dataset_artifact: "wandb-japan/llm-leaderboard/jaster:v3" #if you use artifacts, please fill here (if not, fill null)
+dataset_artifact: "wandb-japan/llm-leaderboard/jaster:v3" #url of wandb reference artifacts
 dataset_dir: "/jaster/1.1.0/evaluation/test"
-target_dataset: "all" # {all, jamp, janli, jcommonsenseqa, jemhopqa, jnli, jsem, jsick, jsquad, jsts, niilc, chabsa}
+target_dataset: "all"
 log_dir: "./logs"
 torch_dtype: "bf16" # {fp16, bf16, fp32}
 custom_prompt_template: null
@@ -46,17 +46,14 @@ custom_prompt_template: null
 # "以下はタスクを説明する指示と、追加の背景情報を提供する入力の組み合わせです。要求を適切に満たす回答を書いてください。\n### 指示：\n{instruction}\n{few_shots}\n### 入力：\n{input}\n### 回答：\n"
 # example of prompt template without fewshots
 # "以下はタスクを説明する指示と、追加の背景情報を提供する入力の組み合わせです。要求を適切に満たす回答を書いてください。\n### 指示：\n{instruction}\n### 入力：\n{input}\n### 回答：\n"
-# example of LLama2 format; plase change tokenizer.bos_token
-# "<tokenizer.bos_token>[INST] <<SYS>>\n あなたは誠実で優秀な日本人のアシスタントです。 \n<</SYS>>\n\n {instruction} \n\n {input} [/INST]"
-
 custom_fewshots_template: null
 # Please include {input} and {output} as variables
 # example of fewshots template
 # "\n### 入力：\n{input}\n### 回答：\n{output}"
 
 metainfo:
-  basemodel_name: "your modelname"
-  model_type: "" # {open llm, commercial api}
+  basemodel_name: "claude-3-opus-20240229"
+  model_type: "open llm" # {open llm, commercial api}
   instruction_tuning_method: "None" # {"None", "Full", "LoRA", ...}
   instruction_tuning_data: ["None"] # {"None", "jaster", "dolly_ja", "oasst_ja", ...}
   num_few_shots: 0
@@ -66,10 +63,10 @@ metainfo:
 mtbench:
   question_artifacts_path: 'wandb-japan/llm-leaderboard/mtbench_ja_question:v0' # if testmode is true, small dataset will be used
   referenceanswer_artifacts_path: 'wandb-japan/llm-leaderboard/mtbench_ja_referenceanswer:v0' # if testmode is true, small dataset will be used
-  judge_prompt_artifacts_path: 'wandb-japan/llm-leaderboard/mtbench_ja_prompt:v1' 
+  judge_prompt_artifacts_path: 'wandb-japan/llm-leaderboard/mtbench_ja_prompt:v1'
   bench_name: 'japanese_mt_bench'
   model_id: null # cannot use '<', '>', ':', '"', '/', '\\', '|', '?', '*', '.'
-  question_begin: null 
+  question_begin: null
   question_end: null 
   max_new_token: 1024
   num_choices: 1
@@ -84,13 +81,13 @@ mtbench:
   parallel: 1
   first_n: null
   # for conv template # added
-  custom_conv_template: false 
+  custom_conv_template: false
   # the following variables will be used when custom_conv_template is set as true
   conv_name: "custom"
   conv_system_message: "以下は、タスクを説明する指示と、文脈のある入力の組み合わせです。要求を適切に満たす応答を書きなさい。"
-  conv_roles: "('指示', '応答')"
-  conv_sep: "\n\n### "
-  conv_stop_token_ids: "[2]"
-  conv_stop_str: "###"
-  conv_role_message_separator: ": \n"
-  conv_role_only_separator: ": \n"
+  conv_roles: "('Human', 'Assistant')"
+  conv_sep: "\n\n"
+  conv_stop_token_ids: ""
+  conv_stop_str: ""
+  conv_role_message_separator: "\n"
+  conv_role_only_separator: "\n"
