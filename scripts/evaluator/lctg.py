@@ -18,11 +18,13 @@ from .evaluate_utils import (
 )
 
 def evaluate():
+    print("Initializing evaluation...")
     # Retrieve the instance from WandbConfigSingleton and load the W&B run and configuration
     instance = WandbConfigSingleton.get_instance()
     run = instance.run
     cfg = instance.config
     llm = instance.llm
+    print("WandbConfigSingleton instance retrieved")
 
     #############################################
     # download dataset
@@ -30,10 +32,13 @@ def evaluate():
     dataset_name = "lctg"
     artifact = run.use_artifact(cfg[dataset_name].artifacts_path, type="dataset")
     artifact_dir = artifact.download()
+    print(f"Dataset artifact downloaded to {artifact_dir}")
     dataset_dir = Path(artifact_dir) / cfg[dataset_name].dataset_dir
     if not dataset_dir.exists():
         print(f"skip {dataset_name} because it is not found in {artifact_dir}")
         raise FileNotFoundError(f"dataset_dir not found: {dataset_dir}")
+    print(f"Dataset directory exists: {dataset_dir}")
+
     #############################################
     # initialization 
     #############################################
@@ -46,14 +51,18 @@ def evaluate():
         'output', 'preprocessed_output', 'ctg', 'qual'
     ]
     output_df = pd.DataFrame(columns=columns)
+    print("Initialization complete")
 
     for task in tasks:
+        print(f"Processing task: {task}")
         file = f"{artifact_dir}/lctg/{task}_prompts_v1.jsonl"
         master_df = pd.read_json(file, orient="records", lines=True)
         if cfg.testmode:
             master_df = master_df.head(2)
         else:
             master_df = master_df.head(30)
+        print(f"Loaded master_df for {task} with {len(master_df)} entries")
+
         #############################################
         # generation 
         #############################################
@@ -75,10 +84,11 @@ def evaluate():
                 batch_size=256,  # APIの場合変える必要あり
             )
             results = llm_ap.get_results()
-            all_results[lmt_type]=[message[0].content for message in results]
+            all_results[lmt_type] = [message[0].content for message in results]
+            print(f"Generated results for limitation type: {lmt_type}")
         data = {
             "generated_text_id": list(range(len(master_df["prompt_id"].tolist()))),
-            "prompt_id":master_df["prompt_id"].tolist(),
+            "prompt_id": master_df["prompt_id"].tolist(),
             "base_text": master_df["base_text"].tolist(),
             "format_result": all_results["format"],
             "char_count_result": all_results["char_count"],
@@ -88,6 +98,7 @@ def evaluate():
         
         # log for debug
         result_df = pd.DataFrame(data)
+        print("Result DataFrame created")
 
         #############################################
         # process generated results 
@@ -95,12 +106,14 @@ def evaluate():
         ctg_col_list = ["format_result", "char_count_result", "keyword_result", "prohibited_word_result"]
         for ctg_col in ctg_col_list:
             result_df[f"{ctg_col}_wo_hf"] = get_generated_result_wo_header_footer(result_df[ctg_col].tolist(), task)
+        print("Processed generated results")
 
         #############################################
         # calculate score ctg  
         #############################################
         result_df2 = result_df[["prompt_id", "format_result", "format_result_wo_hf", "char_count_result", "char_count_result_wo_hf", "keyword_result", "keyword_result_wo_hf", "prohibited_word_result", "prohibited_word_result_wo_hf"]]
         df_ctg = pd.merge(master_df, result_df2, on="prompt_id")
+        print("Merged result DataFrame with master DataFrame")
 
         validation_functions = {
                 'is_valid_format': get_format_is_valid,
@@ -113,9 +126,11 @@ def evaluate():
             df_ctg[validation] = df_ctg.apply(lambda x: validation_functions[validation](x), axis=1).astype(int)
 
         sums = {key: df_ctg[key].sum() for key in validation_functions.keys()}
+        print("Calculated validation sums")
 
         # Calculate the average score for each validation type
         ctg_scores = {key: sums[key] / len(df_ctg) for key in validation_functions.keys()}
+        print("Calculated CTG scores")
 
         for key, score in ctg_scores.items():
             print(f"{key.replace('is_valid_', '').replace('_', ' ').title()}: {score:.3f}")
@@ -135,23 +150,26 @@ def evaluate():
                         ]
         for col in result_columns:
             save_df[col] = save_df[col].apply(lambda x: x)
+        print("Prepared save DataFrame")
 
         #############################################
         # calculate scores quality
         #############################################
         df_quality = quality_process_results(result_df, task)
         quality_scores = calculate_true_proportions(df_quality)
+        print("Calculated quality scores")
 
     #############################################
     # Calculate scores
     #############################################
 
         # individual outputs
-        merged_df = pd.merge(df_quality,save_df, on='prompt_id', how='left')
+        merged_df = pd.merge(df_quality, save_df, on='prompt_id', how='left')
         output_df = transform_data(output_df, merged_df, task)
+        print(f"Transformed data for task: {task}")
 
         # task base summary
-        scores_list = list(ctg_scores.values())+quality_scores
+        scores_list = list(ctg_scores.values()) + quality_scores
         task_summary_table = pd.DataFrame(data=[scores_list], columns=["Format-ctg","C-count-ctg","Keyword-ctg","P-word-ctg","Format-qual","C-count-qual","Keyword-qual","P-word-qual"])
         task_summary_table["AVG-ctg"] = task_summary_table.apply(lambda row: (row["Format-ctg"] + row["C-count-ctg"] + row["Keyword-ctg"] + row["P-word-ctg"]) / 4, axis=1)
         task_summary_table["AVG-qual"] = task_summary_table.apply(lambda row: (row["Format-qual"] + row["C-count-qual"] + row["Keyword-qual"] + row["P-word-qual"]) / 4, axis=1)
@@ -161,22 +179,24 @@ def evaluate():
         for col in list(task_summary_table.columns):
             task_summary_table[col] = task_summary_table[col].map(lambda f: "{:.3f}".format(f))
         wandb.log({f"lctg_{task}_leaderboard_table": task_summary_table})
+        print(f"Logged task summary table for {task}")
 
-        total_summary[f"{task}_AVG-ctg"]=pd.to_numeric(task_summary_table['AVG-ctg'], errors='coerce')
-        total_summary[f"{task}_AVG-qual"]=pd.to_numeric(task_summary_table['AVG-qual'], errors='coerce')
+        total_summary[f"{task}_AVG-ctg"] = pd.to_numeric(task_summary_table['AVG-ctg'], errors='coerce')
+        total_summary[f"{task}_AVG-qual"] = pd.to_numeric(task_summary_table['AVG-qual'], errors='coerce')
 
     # total summary
     AVG_columns_ctg = [f"{task}_AVG-ctg" for task in tasks]
     total_summary["Total-AVG-ctg"] = total_summary[AVG_columns_ctg].mean(axis=1)
     AVG_columns_qual = [f"{task}_AVG-qual" for task in tasks]
     total_summary["Total-AVG-qual"] = total_summary[AVG_columns_qual].mean(axis=1)
-    total_summary["AVG"] = (total_summary["Total-AVG-ctg"]+total_summary["Total-AVG-qual"])/2
+    total_summary["AVG"] = (total_summary["Total-AVG-ctg"] + total_summary["Total-AVG-qual"]) / 2
 
     columns = ['AVG'] + [col for col in total_summary.columns if col != 'AVG']
     total_summary = total_summary[columns]
 
     wandb.log({"lctg_overall_leaderboard_table": total_summary})
     wandb.log({"lctg_output_table": output_df})
+    print("Logged overall leaderboard and output tables")
     
     """
     contents of wandb.log
@@ -238,7 +258,4 @@ def evaluate():
         # qual
 
     """
-
-            
-
-
+    print("Evaluation complete")

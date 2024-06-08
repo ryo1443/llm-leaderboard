@@ -8,14 +8,17 @@ import pandas as pd
 from tqdm import tqdm
 from typing import Tuple, List
 from tqdm.asyncio import tqdm
+import concurrent.futures
 
 ###########################################################
 # Preprocess
 ###########################################################
-def get_generated_result_wo_header_footer(gr_list: List[str], task: str) -> List[List[str]]:
+
+def get_generated_result_wo_header_footer(gr_list: List[str], task: str) -> List[str]:
     client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
-    gr_wo_hf_list = list()
-    for gr in tqdm(gr_list):
+    gr_wo_hf_list = []
+
+    def process_item(gr):
         completion = client.chat.completions.create(
             model="gpt-4o-2024-05-13",
             messages=[
@@ -29,9 +32,13 @@ def get_generated_result_wo_header_footer(gr_list: List[str], task: str) -> List
                 }
             ]
         )
-        output = completion.choices[0].message.content
-        gr_wo_hf_list.append(output)
+        return completion.choices[0].message.content
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=30) as executor:
+        gr_wo_hf_list = list(tqdm(executor.map(process_item, gr_list), total=len(gr_list)))
+
     return gr_wo_hf_list
+
 
 
 def _delete_blank(s: str) -> str:
