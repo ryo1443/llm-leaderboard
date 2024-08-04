@@ -9,14 +9,15 @@ from llm_inference_adapter import get_llm_inference_engine
 from vllm_server import shutdown_vllm_server
 from blend_run import blend_run
 from evaluator import (
-    jaster,
-    jbbq,
-    lctg,
-    mtbench,
-    jaster_translation,
+    # jaster,
+    # jbbq,
+    # lctg,
+    # mtbench,
+    # jaster_translation,
     toxicity,
-    jtruthfulqa,
-    aggregate,
+    ichikara
+    # jtruthfulqa,
+    # aggregate,
 )
 from utils import paginate_choices
 
@@ -96,8 +97,14 @@ if cfg.run.lctg:
     lctg.evaluate()
 
 # toxicity
-if cfg.run.toxicity:
-    toxicity.evaluate()
+# if cfg.run.toxicity:
+#     print("toxicity start", "\n")
+#     toxicity.evaluate()
+
+# ichikara
+if cfg.run.ichikara:
+    print("ichikara start", "\n")
+    ichikara.evaluate()
 
 # JTruthfulQA
 if cfg.run.jtruthfulqa:

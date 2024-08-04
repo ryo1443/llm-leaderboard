@@ -1,22 +1,25 @@
 wandb:
   entity: "wandb-japan"
-  project: "llm-leaderboard3"
+  project: "ichikara-eval"
   #run: please set up run name in a model-base config
 
 github_version: v3.0.0 #for recording
 
-testmode: false
+testmode: true
 inference_interval: 0 # seconds
 
 run:
-  jaster: true
-  jmmlu_robustness: true # if this is set as true, jaster should set as true
-  mtbench: true
-  jbbq: true
-  lctg: true
+  jaster: false
+  jmmlu_robustness: false # if this is set as true, jaster should set as true
+  mtbench: false
+  jbbq: false
+  lctg: false
   toxicity: true
   jtruthfulqa: false
-  aggregate: true
+  aggregate: false
+
+  ichikara: true
+
 
 model:
   artifact_path: null
@@ -59,7 +62,6 @@ jtruthfulqa:
   artifact_path: 'wandb-japan/llm-leaderboard3/jtruthfulqa_dataset:v1'  # JTruthfulQAデータセットのアーティファクトパス
   roberta_model_name: 'nlp-waseda/roberta_jtruthfulqa'  # 評価に使用するRoBERTaモデル名
 
-
 mtbench:
   temperature_override:
     writing: 0.7
@@ -91,6 +93,12 @@ mtbench:
   baseline_model: null 
   parallel: 80
   first_n: null
+
+ichikara:
+  artifact_path: 'wandb-japan/ichikara-eval/ichikara-instruction-eval-001-001:v0'  # JTruthfulQAデータセットのアーティファクトパス
+  judge_prompts_path: ''
+  max_workers: 5
+  judge_model: 'gpt-4o-2024-05-13'
 
 sample_dataset:
   artifacts_path: "your artifact path here"
