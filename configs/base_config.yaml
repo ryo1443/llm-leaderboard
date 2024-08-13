@@ -1,6 +1,6 @@
 wandb:
   entity: "wandb-japan"
-  project: "ichikara-eval"
+  project: "ichikara-eval2"
   #run: please set up run name in a model-base config
 
 github_version: v3.0.0 #for recording
@@ -99,6 +99,7 @@ ichikara:
   judge_prompts_path: ''
   max_workers: 5
   judge_model: 'gpt-4o-2024-05-13'
+  weave_project_name: ichikara-eval2
 
 sample_dataset:
   artifacts_path: "your artifact path here"

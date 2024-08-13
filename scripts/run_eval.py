@@ -15,7 +15,8 @@ from evaluator import (
     # mtbench,
     # jaster_translation,
     toxicity,
-    ichikara
+    ichikara,
+    ichikara_csv
     # jtruthfulqa,
     # aggregate,
 )
@@ -104,7 +105,8 @@ if cfg.run.lctg:
 # ichikara
 if cfg.run.ichikara:
     print("ichikara start", "\n")
-    ichikara.evaluate()
+    # ichikara.evaluate()
+    ichikara_csv.evaluate()
 
 # JTruthfulQA
 if cfg.run.jtruthfulqa:
