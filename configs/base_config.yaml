@@ -1,5 +1,5 @@
 wandb:
-  entity: "wandb-japan"
+  entity: "ryokanazawa"
   project: "llm-leaderboard3"
   #run: please set up run name in a model-base config
 
